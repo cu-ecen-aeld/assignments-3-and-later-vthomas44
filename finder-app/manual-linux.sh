@@ -91,6 +91,7 @@ sudo mknod -m 666 ${OUTDIR}/rootfs/dev/null c 1 3
 sudo mknod -m 622 ${OUTDIR}/rootfs/dev/console c 5 1
 
 # TODO: Clean and build the writer utility
+cd ${FINDER_APP_DIR}
 make clean
 make CROSS_COMPILE=${CROSS_COMPILE}
 
@@ -115,3 +116,4 @@ cd ${OUTDIR}
 gzip -f initramfs.cpio
 
 echo "Build complete. Kernel Image and initramfs.cpio.gz are in ${OUTDIR}"
+cp ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image /tmp/aesd-autograder/
