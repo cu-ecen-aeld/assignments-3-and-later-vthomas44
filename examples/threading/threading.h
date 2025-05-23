@@ -20,6 +20,9 @@ struct thread_data{
      * if an error occurred.
      */
     bool thread_complete_success;
+    pthread_mutex_t* mutex;
+    int wait_to_obtain_ms;
+    int wait_to_release_ms;
 };
 
 
@@ -38,3 +41,4 @@ struct thread_data{
 * @return true if the thread could be started, false if a failure occurred.
 */
 bool start_thread_obtaining_mutex(pthread_t *thread, pthread_mutex_t *mutex,int wait_to_obtain_ms, int wait_to_release_ms);
+void* threadfunc(void* thread_param);
