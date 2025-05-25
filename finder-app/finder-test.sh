@@ -52,20 +52,32 @@ fi
 #make clean
 #make
 
+echo "Current directory is: $(pwd)"
+ls
+ls -l /usr/bin
 for i in $( seq 1 $NUMFILES)
 do
-	writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
+	/usr/bin/writer.sh "$WRITEDIR/${username}$i.txt" "$WRITESTR"
 done
 
-OUTPUTSTRING=$(finder.sh "$WRITEDIR" "$WRITESTR")
-echo "${OUTPUTSTRING}" > /tmp/assignment4-result.txt
+
+echo "Current directory is: $(pwd)"
+
+echo "-------"
+echo "-------"
+echo ${WRITEDIR}
+echo ${WRITESTR}
+echo "-------"
+
+OUTPUTSTRING=$(/usr/bin/finder.sh "$WRITEDIR" "$WRITESTR")
+
+echo ${OUTPUTSTRING} > /tmp/assignment4-result.txt
 
 # remove temporary directories
 rm -rf /tmp/aeld-data
 
 set +e
 echo ${OUTPUTSTRING} | grep "${MATCHSTR}"
-
 if [ $? -eq 0 ]; then
 	echo "success"
 	exit 0
