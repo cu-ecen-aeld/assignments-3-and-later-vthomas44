@@ -2,13 +2,24 @@
 # Tester script for assignment 1 and assignment 2
 # Author: Siddhant Jajoo
 
-set -e
-set -u
+set -e # Exit immediately if a command exits with a non-zero status
+set -u # Treat unset variables as an error
 
+# Initialize IS_ASSIGNMENT_4_PART_2 to false for assignment-3-and-later.
+# Or Initialize IS_ASSIGNMENT_4_PART_2 to true for assignment-4-part-2 
+IS_ASSIGNMENT_4_PART_2=${IS_ASSIGNMENT_4_PART_2:-true}
 NUMFILES=10
 WRITESTR=AELD_IS_FUN
 WRITEDIR=/tmp/aeld-data
-username=$(cat /etc/finder-app/conf/username.txt)
+
+# Set conf path according to variable IS_ASSIGNMENT_4_PART_2
+if $IS_ASSIGNMENT_4_PART_2; then
+    CONFIG_DIR="/etc/finder-app/conf"
+else
+    CONFIG_DIR="conf"
+fi
+
+username=$(cat "$CONFIG_DIR/username.txt")
 
 if [ $# -lt 3 ]
 then
@@ -32,7 +43,7 @@ echo "Writing ${NUMFILES} files containing string ${WRITESTR} to ${WRITEDIR}"
 rm -rf "${WRITEDIR}"
 
 # create $WRITEDIR if not assignment1
-assignment=`cat /etc/finder-app/conf/assignment.txt`
+assignment=$(cat "$CONFIG_DIR/assignment.txt")
 
 if [ $assignment != 'assignment1' ]
 then
@@ -48,30 +59,29 @@ then
 		exit 1
 	fi
 fi
+
 #echo "Removing the old writer utility and compiling as a native application"
 #make clean
 #make
 
-echo "Current directory is: $(pwd)"
-ls
-ls -l /usr/bin
 for i in $( seq 1 $NUMFILES)
 do
-	/usr/bin/writer.sh "$WRITEDIR/${username}$i.txt" "$WRITESTR"
+	if $IS_ASSIGNMENT_4_PART_2; then
+		writer "$WRITEDIR/${username}$i.txt" "$WRITESTR" # assuming executable in is the PATH
+	else
+		./writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
+	fi
 done
 
+if $IS_ASSIGNMENT_4_PART_2; then
+	OUTPUTSTRING=$(finder.sh "$WRITEDIR" "$WRITESTR") # assuming executable in is the PATH 
+else
+	OUTPUTSTRING=$(./finder.sh "$WRITEDIR" "$WRITESTR")
+fi
 
-echo "Current directory is: $(pwd)"
-
-echo "-------"
-echo "-------"
-echo ${WRITEDIR}
-echo ${WRITESTR}
-echo "-------"
-
-OUTPUTSTRING=$(/usr/bin/finder.sh "$WRITEDIR" "$WRITESTR")
-
-echo ${OUTPUTSTRING} > /tmp/assignment4-result.txt
+if $IS_ASSIGNMENT_4_PART_2; then
+    echo "${OUTPUTSTRING}" > /tmp/assignment4-result.txt # write a file with output of the finder command
+fi
 
 # remove temporary directories
 rm -rf /tmp/aeld-data
