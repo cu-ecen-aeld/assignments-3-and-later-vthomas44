@@ -1,9 +1,9 @@
 # server/Makefile
 
-CC       ?= gcc
+CC       ?= $(CROSS_COMPILE)gcc
 CFLAGS   += -Wall -Wextra -pedantic
 LDFLAGS  += 
-LDLIBS   += 
+LDLIBS   += -pthread -lrt
 
 TARGET   = aesdsocket
 SRCS     = aesdsocket.c
