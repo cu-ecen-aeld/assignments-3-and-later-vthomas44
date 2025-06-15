@@ -1,6 +1,6 @@
-CROSS_COMPILE ?=
+CROSS_COMPILE ?= aarch64-linux-gnu-
 CC := $(CROSS_COMPILE)gcc
-CFLAGS ?= -Wall -Wextra -pedantic
+CFLAGS += -Wall -Wextra -pedantic
 LDLIBS += -pthread -lrt
 
 TARGET = aesdsocket
@@ -15,4 +15,5 @@ clean:
 	$(RM) $(TARGET)
 
 .PHONY: all clean
+
 
