@@ -1,21 +1,18 @@
-# server/Makefile
+CROSS_COMPILE ?=
+CC := $(CROSS_COMPILE)gcc
+CFLAGS ?= -Wall -Wextra -pedantic
+LDLIBS += -pthread -lrt
 
-CC       ?= $(CROSS_COMPILE)gcc
-CFLAGS   += -Wall -Wextra -pedantic
-LDFLAGS  += 
-LDLIBS   += -pthread -lrt
-
-TARGET   = aesdsocket
-SRCS     = aesdsocket.c
+TARGET = aesdsocket
+SRCS = aesdsocket.c
 
 all: $(TARGET)
 
-default: all
-
 $(TARGET): $(SRCS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 clean:
 	$(RM) $(TARGET)
 
-.PHONY: all default clean
+.PHONY: all clean
+
