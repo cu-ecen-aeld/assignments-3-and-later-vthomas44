@@ -79,43 +79,47 @@ static void *connection_handler(void *_pconn_fd)
     syslog(LOG_INFO, "Accepted connection from %s", ip);
 
     char buf[BUF_SIZE];
-    size_t total = 0;
-    ssize_t r;
+    size_t buf_len = 0;
 
-    pthread_mutex_lock(&file_mutex);
-    FILE *df = fopen(DATA_FILE, "a+");
-    if (!df) {
-        pthread_mutex_unlock(&file_mutex);
-        perror("fopen");
-        close(conn_fd);
-        return NULL;
-    }
+    while (!do_exit) {
+        ssize_t r = read(conn_fd, buf + buf_len, BUF_SIZE - buf_len);
+        if (r <= 0) break;
 
-    while ((r = read(conn_fd, buf, sizeof(buf))) > 0) {
-        fwrite(buf, 1, r, df);
-        total += r;
-        if (memchr(buf, '\n', r)) {
-            break;
-        }
-    }
+        buf_len += r;
+        bool found_newline = false;
 
-    fflush(df);
-    fclose(df);
+        for (size_t i = 0; i < buf_len; ++i) {
+            if (buf[i] == '\n') {
+                found_newline = true;
+                size_t write_len = i + 1;
 
-    df = fopen(DATA_FILE, "r");
-    if (df) {
-        char cbuf[BUF_SIZE];
-        size_t n;
-        while ((n = fread(cbuf, 1, BUF_SIZE, df)) > 0) {
-            if (write(conn_fd, cbuf, n) < 0) {
-                perror("write");
-                break;
+                pthread_mutex_lock(&file_mutex);
+                FILE *df = fopen(DATA_FILE, "a");
+                if (df) {
+                    fwrite(buf, 1, write_len, df);
+                    fclose(df);
+                }
+                pthread_mutex_unlock(&file_mutex);
+
+                // Echo full file back
+                pthread_mutex_lock(&file_mutex);
+                df = fopen(DATA_FILE, "r");
+                if (df) {
+                    int c;
+                    while ((c = fgetc(df)) != EOF) {
+                        if (write(conn_fd, &c, 1) < 0) break;
+                    }
+                    fclose(df);
+                }
+                pthread_mutex_unlock(&file_mutex);
+
+                // Shift remaining data
+                memmove(buf, buf + write_len, buf_len - write_len);
+                buf_len -= write_len;
+                break; // continue to receive more
             }
         }
-        fclose(df);
     }
-
-    pthread_mutex_unlock(&file_mutex);
 
     syslog(LOG_INFO, "Closed connection from %s", ip);
     close(conn_fd);
