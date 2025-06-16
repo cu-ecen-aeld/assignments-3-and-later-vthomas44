@@ -88,37 +88,40 @@ static void *connection_handler(void *_pconn_fd)
         buf_len += r;
         bool found_newline = false;
 
-        for (size_t i = 0; i < buf_len; ++i) {
-            if (buf[i] == '\n') {
-                found_newline = true;
-                size_t write_len = i + 1;
+        size_t processed = 0;
+while (true) {
+    void *newline = memchr(buf + processed, '\n', buf_len - processed);
+    if (!newline) break;
 
-                pthread_mutex_lock(&file_mutex);
-                FILE *df = fopen(DATA_FILE, "a");
-                if (df) {
-                    fwrite(buf, 1, write_len, df);
-                    fclose(df);
-                }
-                pthread_mutex_unlock(&file_mutex);
+    size_t write_len = (char*)newline - (buf + processed) + 1;
 
-                // Echo full file back
-                pthread_mutex_lock(&file_mutex);
-                df = fopen(DATA_FILE, "r");
-                if (df) {
-                    int c;
-                    while ((c = fgetc(df)) != EOF) {
-                        if (write(conn_fd, &c, 1) < 0) break;
-                    }
-                    fclose(df);
-                }
-                pthread_mutex_unlock(&file_mutex);
+    pthread_mutex_lock(&file_mutex);
+    FILE *df = fopen(DATA_FILE, "a");
+    if (df) {
+        fwrite(buf + processed, 1, write_len, df);
+        fclose(df);
+    }
+    pthread_mutex_unlock(&file_mutex);
 
-                // Shift remaining data
-                memmove(buf, buf + write_len, buf_len - write_len);
-                buf_len -= write_len;
-                break; // continue to receive more
-            }
+    pthread_mutex_lock(&file_mutex);
+    df = fopen(DATA_FILE, "r");
+    if (df) {
+        int c;
+        while ((c = fgetc(df)) != EOF) {
+            if (write(conn_fd, &c, 1) < 0) break;
         }
+        fclose(df);
+    }
+    pthread_mutex_unlock(&file_mutex);
+
+    processed += write_len;
+}
+
+if (processed > 0 && processed < buf_len) {
+    memmove(buf, buf + processed, buf_len - processed);
+}
+buf_len -= processed;
+
     }
 
     syslog(LOG_INFO, "Closed connection from %s", ip);
