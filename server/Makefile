@@ -1,16 +1,13 @@
-CROSS_COMPILE ?=
-CC := $(CROSS_COMPILE)gcc
+TARGET = aesdsocket
+SRCS = aesdsocket.c
 
 CFLAGS += -Wall -Wextra -pedantic
 LDLIBS += -pthread -lrt
 
-TARGET = aesdsocket
-SRCS = aesdsocket.c
-
 all: $(TARGET)
 
 $(TARGET): $(SRCS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 clean:
 	$(RM) $(TARGET)
