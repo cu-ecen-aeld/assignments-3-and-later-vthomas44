@@ -79,37 +79,43 @@ static void *connection_handler(void *_pconn_fd)
     syslog(LOG_INFO, "Accepted connection from %s", ip);
 
     char buf[BUF_SIZE];
+    size_t total = 0;
+    ssize_t r;
 
-    while (!do_exit) {
-        ssize_t r = read(conn_fd, buf, sizeof(buf));
-        if (r <= 0) break;
+    pthread_mutex_lock(&file_mutex);
+    FILE *df = fopen(DATA_FILE, "a+");
+    if (!df) {
+        pthread_mutex_unlock(&file_mutex);
+        perror("fopen");
+        close(conn_fd);
+        return NULL;
+    }
 
-        pthread_mutex_lock(&file_mutex);
-        FILE *df = fopen(DATA_FILE, "a+");
-        if (!df) {
-            pthread_mutex_unlock(&file_mutex);
-            perror("fopen");
-            close(conn_fd);
-            return NULL;
+    while ((r = read(conn_fd, buf, sizeof(buf))) > 0) {
+        fwrite(buf, 1, r, df);
+        total += r;
+        if (memchr(buf, '\n', r)) {
+            break;
         }
+    }
 
-        for (ssize_t i = 0; i < r; i++) {
-            fputc(buf[i], df);
-            if (buf[i] == '\n') {
-                fflush(df);
-                fseek(df, 0, SEEK_SET);
-                int c;
-                while ((c = fgetc(df)) != EOF) {
-                    if (write(conn_fd, &c, 1) < 0) {
-                        perror("write");
-                        break;
-                    }
-                }
+    fflush(df);
+    fclose(df);
+
+    df = fopen(DATA_FILE, "r");
+    if (df) {
+        char cbuf[BUF_SIZE];
+        size_t n;
+        while ((n = fread(cbuf, 1, BUF_SIZE, df)) > 0) {
+            if (write(conn_fd, cbuf, n) < 0) {
+                perror("write");
+                break;
             }
         }
         fclose(df);
-        pthread_mutex_unlock(&file_mutex);
     }
+
+    pthread_mutex_unlock(&file_mutex);
 
     syslog(LOG_INFO, "Closed connection from %s", ip);
     close(conn_fd);
