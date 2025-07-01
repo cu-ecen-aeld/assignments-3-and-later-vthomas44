@@ -187,12 +187,13 @@ int aesd_init_module(void)
 void aesd_cleanup_module(void)
 {
     dev_t devno = MKDEV(aesd_major, aesd_minor);
-    uint8_t i;
 
     cdev_del(&aesd_device.cdev);
 
-    AESD_CIRCULAR_BUFFER_FOREACH(i) {
-        kfree(aesd_device.buffer.entry[i].buffptr);
+    uint8_t index;
+    struct aesd_buffer_entry *entry;
+    AESD_CIRCULAR_BUFFER_FOREACH(entry, &aesd_device.buffer, index) {
+    kfree(entry->buffptr);
     }
 
     if (aesd_device.partial)
